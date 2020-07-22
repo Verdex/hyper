@@ -12,6 +12,7 @@ pub fn gen_code(ast : Vec<Statement>) -> String {
 
                 ret.push(format!("{}return {}", " ".repeat(tab * 4), exprs.join(", ")));
             },
+            Statement::Break => ret.push(format!("{}break", " ".repeat(tab * 4))),
             _ => panic!("blah"),
         }
     }
