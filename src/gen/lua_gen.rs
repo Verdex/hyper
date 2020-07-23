@@ -113,6 +113,7 @@ fn gen_expr(expr : Expr) -> String {
         Expr::Bool(false) => "false".to_string(),
         Expr::String(s) => s,
         Expr::Number(s) => s,
+        Expr::Nil => "nil".to_string(),
         _ => panic!("expr"),
     }
 }
