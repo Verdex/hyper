@@ -22,7 +22,7 @@ pub struct InlineTableAssign {
 }
 
 pub enum Statement {
-    LocalVar(String),
+    LocalVarDeclare(String),
     Break,
     Return(Vec<Expr>),
     If { test : Expr, statements : Vec<Statement> },
