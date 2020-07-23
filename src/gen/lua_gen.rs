@@ -23,7 +23,7 @@ fn gen_statement(statement : Statement, mut tab : usize) -> (String, usize) {
             (format!("{}return {}", " ".repeat(tab * 4), exprs.join(", ")), tab)
         },
         Statement::Break => (format!("{}break", " ".repeat(tab * 4)), tab),
-        Statement::If { test, statements } => {
+        Statement::If { test, statements, followed } => {
             tab += 1; 
             let test_text = gen_expr(test);
             
@@ -37,14 +37,24 @@ fn gen_statement(statement : Statement, mut tab : usize) -> (String, usize) {
 
             tab -= 1;
 
-            (format!( "{}if {} then\n{}{}end"
-                    , " ".repeat(tab * 4)
-                    , test_text
-                    , s
-                    , " ".repeat(tab * 4)
-                    ), tab)
+            if followed {
+                (format!( "{}if {} then\n{}"
+                        , " ".repeat(tab * 4)
+                        , test_text
+                        , s
+                        ), tab)
+            }
+            else {
+                (format!( "{}if {} then\n{}\n{}end"
+                        , " ".repeat(tab * 4)
+                        , test_text
+                        , s
+                        , " ".repeat(tab * 4)
+                        ), tab)
+            }
         },
-        Statement::Elseif { test, statements } => {
+        Statement::Elseif { test, statements, followed } => {
+            tab += 1;
             let test_text = gen_expr(test);
             
             let mut text = vec![];
@@ -55,13 +65,27 @@ fn gen_statement(statement : Statement, mut tab : usize) -> (String, usize) {
 
             let s = text.join("\n");
 
-            (format!( "{}elseif {} then\n{}"
-                    , " ".repeat((tab - 1) * 4)
-                    , test_text
-                    , s
-                    ), tab)
+            tab -= 1;
+
+            if followed {
+                (format!( "{}elseif {} then\n{}"
+                        , " ".repeat(tab * 4)
+                        , test_text
+                        , s
+                        ), tab)
+            }
+            else {
+                (format!( "{}elseif {} then\n{}\n{}end"
+                        , " ".repeat(tab * 4)
+                        , test_text
+                        , s
+                        , " ".repeat(tab * 4)
+                        ), tab)
+            }
         },
         Statement::Else(statements) => {
+            tab += 1;
+
             let mut text = vec![];
             for s in statements {
                 let (st, tab) = gen_statement(s, tab);
@@ -70,9 +94,12 @@ fn gen_statement(statement : Statement, mut tab : usize) -> (String, usize) {
 
             let s = text.join("\n");
 
-            (format!( "{}else\n{}"
-                    , " ".repeat((tab - 1) * 4)
+            tab -= 1;
+
+            (format!( "{}else\n{}\n{}end"
+                    , " ".repeat(tab * 4)
                     , s
+                    , " ".repeat(tab * 4)
                     ), tab)
         },
         _ => panic!("blah"),
@@ -90,3 +117,180 @@ fn gen_expr(expr : Expr) -> String {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_handle_if() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: false
+                                       , statements: vec! [ Statement::Break 
+                                                          , Statement::Break
+                                                          ]
+                                       }
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    break
+    break
+end
+"#);
+    }
+
+    #[test]
+    fn should_handle_if_with_elseif() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: true 
+                                       , statements: vec! [ Statement::Break 
+                                                          , Statement::Break
+                                                          ]
+                                       }
+                       , Statement::Elseif { test: Expr::Number("1".to_string())
+                                           , followed: false
+                                           , statements: vec! [ Statement::Break, Statement::Break ]
+                                           }
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    break
+    break
+elseif 1 then
+    break
+    break
+end
+"#);
+    }
+
+    #[test]
+    fn should_handle_if_with_elseif_with_elseif() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: true 
+                                       , statements: vec! [ Statement::Break 
+                                                          , Statement::Break
+                                                          ]
+                                       }
+                       , Statement::Elseif { test: Expr::Number("1".to_string())
+                                           , followed: true 
+                                           , statements: vec! [ Statement::Break, Statement::Break ]
+                                           }
+                       , Statement::Elseif { test: Expr::Number("2".to_string())
+                                           , followed: false 
+                                           , statements: vec! [ Statement::Break, Statement::Break ]
+                                           }
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    break
+    break
+elseif 1 then
+    break
+    break
+elseif 2 then
+    break
+    break
+end
+"#);
+    }
+
+    #[test]
+    fn should_handle_if_with_elseif_with_elseif_with_else() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: true 
+                                       , statements: vec! [ Statement::Break 
+                                                          , Statement::Break
+                                                          ]
+                                       }
+                       , Statement::Elseif { test: Expr::Number("1".to_string())
+                                           , followed: true 
+                                           , statements: vec! [ Statement::Break, Statement::Break ]
+                                           }
+                       , Statement::Elseif { test: Expr::Number("2".to_string())
+                                           , followed: true 
+                                           , statements: vec! [ Statement::Break, Statement::Break ]
+                                           }
+                       , Statement::Else ( 
+                                            vec! [ Statement::Break, Statement::Break ]
+                                         )
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    break
+    break
+elseif 1 then
+    break
+    break
+elseif 2 then
+    break
+    break
+else
+    break
+    break
+end
+"#);
+    }
+
+    #[test]
+    fn should_handle_if_with_else() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: true 
+                                       , statements: vec! [ Statement::Break 
+                                                          , Statement::Break
+                                                          ]
+                                       }
+                       , Statement::Else ( 
+                                            vec! [ Statement::Break, Statement::Break ]
+                                         )
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    break
+    break
+else
+    break
+    break
+end
+"#);
+    }
+
+    #[test]
+    fn should_handle_if_with_nested_if() {
+        let ast = vec! [ Statement::If { test: Expr::Number("0".to_string())
+                                       , followed: false 
+                                       , statements: vec! [ Statement::If { test: Expr::Number("1".to_string())
+                                                                          , followed: false 
+                                                                          , statements: vec! [ Statement::Break 
+                                                                                             , Statement::Break
+                                                                                             ]
+                                                                          }
+                                                          ]
+                                       }
+                       ];
+                                         
+        let output = gen_code( ast );
+
+        assert_eq!( output, 
+r#"if 0 then
+    if 1 then
+        break
+        break
+    end
+end
+"#);
+    }
+}

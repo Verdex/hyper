@@ -1,5 +1,6 @@
 
 pub enum Expr {
+    Nil,
     Number(String),
     String(String),
     Bool(bool),
@@ -25,8 +26,8 @@ pub enum Statement {
     LocalVarDeclare(String),
     Break,
     Return(Vec<Expr>),
-    If { test : Expr, statements : Vec<Statement> },
-    Elseif { test : Expr, statements : Vec<Statement> },
+    If { test : Expr, statements : Vec<Statement>, followed : bool },
+    Elseif { test : Expr, statements : Vec<Statement>, followed : bool },
     Else(Vec<Statement>),
     AssignVar { vars : Vec<String>, exprs : Vec<Expr> },
     AssignListAccess { target : Expr, index : Expr, new_value : Expr },
