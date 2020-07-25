@@ -55,7 +55,6 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                     else_statements,
                     " ".repeat(tab * 4))
             }
-
         },
         _ => panic!("blah"),
     }
