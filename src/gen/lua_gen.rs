@@ -56,6 +56,16 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                     " ".repeat(tab * 4))
             }
         },
+        Statement::AssignVar { vars, exprs } => {
+            format!( "{}{} = {}\n"
+                   , " ".repeat(tab * 4)
+                   , vars.join(", ")
+                   , exprs.into_iter()
+                          .map(gen_expr)
+                          .collect::<Vec<String>>()
+                          .join(", ")
+                   )
+        },
         _ => panic!("blah"),
     }
 }
