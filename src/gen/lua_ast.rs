@@ -26,9 +26,7 @@ pub enum Statement {
     LocalVarDeclare(String),
     Break,
     Return(Vec<Expr>),
-    If { test : Expr, statements : Vec<Statement>, followed : bool },
-    Elseif { test : Expr, statements : Vec<Statement>, followed : bool },
-    Else(Vec<Statement>),
+    If { if_statements : Vec<If>, else_statement : Vec<Statement> },
     AssignVar { vars : Vec<String>, exprs : Vec<Expr> },
     AssignListAccess { target : Expr, index : Expr, new_value : Expr },
     AssignTableAccess { target : Expr, slot : String, new_value : Expr },
@@ -39,4 +37,11 @@ pub enum Statement {
     FunCall { fun : Expr, params : Vec<Expr> },
     CallSystemFun { fun : String, params : Vec<Expr> },
 }
+
+
+pub struct If { 
+    pub test : Expr, 
+    pub statements : Vec<Statement>, 
+}
+
 
