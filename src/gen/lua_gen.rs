@@ -77,6 +77,16 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , value_expr
                    )
         },
+        Statement::AssignTableAccess { target, slot, new_value } => {
+            let table_expr = gen_expr(target);
+            let value_expr = gen_expr(new_value);
+            format!( "{}{}.{} = {}"
+                   , " ".repeat(tab * 4)
+                   , table_expr
+                   , slot
+                   , value_expr
+                   )
+        },
         _ => panic!("blah"),
     }
 }
