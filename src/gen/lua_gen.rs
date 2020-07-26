@@ -119,6 +119,25 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , test_expr
                    )
         },
+        Statement::For { vars, iterator, statements } => {
+            let vars_text = vars.join("\n");
+
+            let iterator_text = gen_expr(iterator);
+
+            let statements_text = statements 
+                .into_iter()
+                .map(|s| gen_statement(s, tab + 1))
+                .map(|s| format!("{}\n", s))
+                .collect::<String>();
+
+            format!( "{}for {} in {} do\n{}{}end"
+                   , " ".repeat(tab * 4)
+                   , vars_text
+                   , iterator_text
+                   , statements_text
+                   , " ".repeat(tab * 4)
+                   )
+        },
         _ => panic!("blah"),
     }
 }
