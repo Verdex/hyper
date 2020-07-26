@@ -208,12 +208,25 @@ fn gen_if(if_statement : If, tab : usize) -> String {
 
 fn gen_expr(expr : Expr) -> String {
     match expr {
-        Expr::Var(s) => s,
+        Expr::Nil => "nil".to_string(),
+        Expr::Number(s) => s,
+        Expr::String(s) => s,
         Expr::Bool(true) => "true".to_string(),
         Expr::Bool(false) => "false".to_string(),
-        Expr::String(s) => s,
-        Expr::Number(s) => s,
-        Expr::Nil => "nil".to_string(),
+        Expr::Var(s) => s,
+        Expr::TableCons(inline_table_assign) => {
+            // { ["a"] = b ; ... }
+            let assigns = inline_table_assign
+                .into_iter()
+                .map(|a| format!( " [\"{}\"] = {} "
+                                , a.key
+                                , gen_expr(a.value)
+                                ))
+                .collect::<Vec<String>>()
+                .join("; ");
+            
+            format!( "{{ {} }}", assigns ) 
+        },
         _ => panic!("expr"),
     }
 }
