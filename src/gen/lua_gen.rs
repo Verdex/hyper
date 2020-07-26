@@ -177,7 +177,19 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , params_text
                    )
         },
-        _ => panic!("blah"),
+        Statement::CallSystemFun { fun, params } => {
+            let params_text = params
+                .into_iter()
+                .map(|s| gen_expr(s))
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            format!( "{}{}( {} )"
+                   , " ".repeat(tab * 4)
+                   , fun
+                   , params_text
+                   )
+        },
     }
 }
 
