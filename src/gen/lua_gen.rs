@@ -238,6 +238,14 @@ fn gen_expr(expr : Expr) -> String {
                 .join(", ");
             format!( "{{ {} }}", exprs_text )
         },
+        Expr::ListAccess { expr, index } => {
+            let expr_text = gen_expr(*expr);
+            let index_text = gen_expr(*index);
+            format!( "{}[ {} ]"
+                   , expr_text
+                   , index_text
+                   )
+        },
         _ => panic!("expr"),
     }
 }
