@@ -103,6 +103,22 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , " ".repeat(tab * 4)
                    )
         },
+        Statement::Repeat { test, statements } => {
+            let test_expr = gen_expr(test);
+
+            let statements_text = statements 
+                .into_iter()
+                .map(|s| gen_statement(s, tab + 1))
+                .map(|s| format!("{}\n", s))
+                .collect::<String>();
+          
+            format!( "{}repeat\n{}{}until {}"
+                   , " ".repeat(tab * 4)
+                   , statements_text
+                   , " ".repeat(tab * 4)
+                   , test_expr
+                   )
+        },
         _ => panic!("blah"),
     }
 }
