@@ -230,6 +230,14 @@ fn gen_expr(expr : Expr) -> String {
             let expr_text = gen_expr(*expr);
             format!( "{}.{}", expr_text, slot )
         },
+        Expr::ListCons(exprs) => {
+            let exprs_text = exprs
+                .into_iter()
+                .map(|e| gen_expr(e))
+                .collect::<Vec<String>>()
+                .join(", ");
+            format!( "{{ {} }}", exprs_text )
+        },
         _ => panic!("expr"),
     }
 }
