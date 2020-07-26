@@ -215,7 +215,6 @@ fn gen_expr(expr : Expr) -> String {
         Expr::Bool(false) => "false".to_string(),
         Expr::Var(s) => s,
         Expr::TableCons(inline_table_assign) => {
-            // { ["a"] = b ; ... }
             let assigns = inline_table_assign
                 .into_iter()
                 .map(|a| format!( " [\"{}\"] = {} "
@@ -226,6 +225,10 @@ fn gen_expr(expr : Expr) -> String {
                 .join("; ");
             
             format!( "{{ {} }}", assigns ) 
+        },
+        Expr::TableAccess { expr, slot } => {
+            let expr_text = gen_expr(*expr);
+            format!( "{}.{}", expr_text, slot )
         },
         _ => panic!("expr"),
     }
