@@ -163,6 +163,20 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , " ".repeat(tab * 4)
                    )
         },
+        Statement::FunCall { fun, params } => {
+            let fun_text = gen_expr(fun);
+            let params_text = params
+                .into_iter()
+                .map(|s| gen_expr(s))
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            format!( "{}{}( {} )"
+                   , " ".repeat(tab * 4)
+                   , fun_text
+                   , params_text
+                   )
+        },
         _ => panic!("blah"),
     }
 }
