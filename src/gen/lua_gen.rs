@@ -66,6 +66,17 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                           .join(", ")
                    )
         },
+        Statement::AssignListAccess { target, index, new_value } => {
+            let list_expr = gen_expr(target);
+            let index_expr = gen_expr(index);
+            let value_expr = gen_expr(new_value);
+            format!( "{}{}[ {} ] = {}"
+                   , " ".repeat(tab * 4)
+                   , list_expr
+                   , index_expr
+                   , value_expr
+                   )
+        },
         _ => panic!("blah"),
     }
 }
