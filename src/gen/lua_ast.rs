@@ -33,7 +33,7 @@ pub enum Statement {
     While { test : Expr, statements : Vec<Statement> },
     Repeat { test : Expr, statements : Vec<Statement> },
     For { vars : Vec<String>, iterator : Expr, statements : Vec<Statement> },
-    ForI { var : String, start : Expr, end : Expr, increment : Option<Expr> },
+    ForI { var : String, start : Expr, end : Expr, increment : Option<Expr>, statements : Vec<Statement> },
     FunCall { fun : Expr, params : Vec<Expr> },
     CallSystemFun { fun : String, params : Vec<Expr> },
 }

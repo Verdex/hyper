@@ -138,6 +138,31 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , " ".repeat(tab * 4)
                    )
         },
+        Statement::ForI { var, start, end, increment, statements } => {
+            let start_text = gen_expr(start);
+            let end_text = gen_expr(end);
+            
+            let increment_text = match increment {
+                Some(i) => gen_expr(i),
+                None => "1".to_string(),
+            };
+
+            let statements_text = statements 
+                .into_iter()
+                .map(|s| gen_statement(s, tab + 1))
+                .map(|s| format!("{}\n", s))
+                .collect::<String>();
+
+            format!( "{}for {} = {}, {}, {} do\n{}{}end"
+                   , " ".repeat(tab * 4)
+                   , var
+                   , start_text
+                   , end_text
+                   , increment_text
+                   , statements_text
+                   , " ".repeat(tab * 4)
+                   )
+        },
         _ => panic!("blah"),
     }
 }
