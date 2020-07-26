@@ -246,6 +246,19 @@ fn gen_expr(expr : Expr) -> String {
                    , index_text
                    )
         },
+        Expr::FunCall { fun, params } => {
+            let fun_text = gen_expr(*fun);
+            let params_text = params
+                .into_iter()
+                .map(|s| gen_expr(s))
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            format!( "{}( {} )"
+                   , fun_text
+                   , params_text
+                   )
+        },
         _ => panic!("expr"),
     }
 }
