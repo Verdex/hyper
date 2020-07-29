@@ -290,6 +290,24 @@ fn gen_expr(expr : Expr, tab : usize) -> String {
                    , params_text
                    )
         },
+        Expr::CallBinFun { fun, a, b } => {
+            let a_text = gen_expr(*a, tab);
+            let b_text = gen_expr(*b, tab);
+
+            format!( "{} {} {}"
+                   , a_text
+                   , fun
+                   , b_text
+                   )
+        },
+        Expr::CallUniFun { fun, a } => {
+            let a_text = gen_expr(*a, tab);
+
+            format!( "{}{}"
+                   , a_text
+                   , fun
+                   )
+        },
         _ => panic!("expr"),
     }
 }
