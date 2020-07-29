@@ -3,7 +3,7 @@ use crate::gen::lua_ast::*;
 
 pub fn gen_code(ast : Vec<Statement>) -> String {
     let mut ret : Vec<String> = vec![]; 
-    let mut tab = 0;
+    let tab = 0;
 
     for statement in ast {
         let v = gen_statement(statement, tab);
@@ -17,7 +17,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
     match statement {
         Statement::LocalVarDeclare(name) => format!("{}local {}", " ".repeat(tab * 4), name),
         Statement::Return(es) => {
-            let exprs = es.into_iter().map(gen_expr).collect::<Vec<String>>();
+            let exprs = es.into_iter().map(|e| gen_expr(e, tab)).collect::<Vec<String>>();
 
             format!("{}return {}", " ".repeat(tab * 4), exprs.join(", "))
         },
@@ -61,15 +61,15 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    , " ".repeat(tab * 4)
                    , vars.join(", ")
                    , exprs.into_iter()
-                          .map(gen_expr)
+                          .map(|e| gen_expr(e, tab))
                           .collect::<Vec<String>>()
                           .join(", ")
                    )
         },
         Statement::AssignListAccess { target, index, new_value } => {
-            let list_expr = gen_expr(target);
-            let index_expr = gen_expr(index);
-            let value_expr = gen_expr(new_value);
+            let list_expr = gen_expr(target, tab);
+            let index_expr = gen_expr(index, tab);
+            let value_expr = gen_expr(new_value, tab);
             format!( "{}{}[ {} ] = {}"
                    , " ".repeat(tab * 4)
                    , list_expr
@@ -78,8 +78,8 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    )
         },
         Statement::AssignTableAccess { target, slot, new_value } => {
-            let table_expr = gen_expr(target);
-            let value_expr = gen_expr(new_value);
+            let table_expr = gen_expr(target, tab);
+            let value_expr = gen_expr(new_value, tab);
             format!( "{}{}.{} = {}"
                    , " ".repeat(tab * 4)
                    , table_expr
@@ -88,7 +88,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    )
         },
         Statement::While { test, statements } => {
-            let test_expr = gen_expr(test);
+            let test_expr = gen_expr(test, tab);
 
             let statements_text = statements 
                 .into_iter()
@@ -104,7 +104,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    )
         },
         Statement::Repeat { test, statements } => {
-            let test_expr = gen_expr(test);
+            let test_expr = gen_expr(test, tab);
 
             let statements_text = statements 
                 .into_iter()
@@ -122,7 +122,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
         Statement::For { vars, iterator, statements } => {
             let vars_text = vars.join("\n");
 
-            let iterator_text = gen_expr(iterator);
+            let iterator_text = gen_expr(iterator, tab);
 
             let statements_text = statements 
                 .into_iter()
@@ -139,11 +139,11 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    )
         },
         Statement::ForI { var, start, end, increment, statements } => {
-            let start_text = gen_expr(start);
-            let end_text = gen_expr(end);
+            let start_text = gen_expr(start, tab);
+            let end_text = gen_expr(end, tab);
             
             let increment_text = match increment {
-                Some(i) => gen_expr(i),
+                Some(i) => gen_expr(i, tab),
                 None => "1".to_string(),
             };
 
@@ -164,10 +164,10 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
                    )
         },
         Statement::FunCall { fun, params } => {
-            let fun_text = gen_expr(fun);
+            let fun_text = gen_expr(fun, tab);
             let params_text = params
                 .into_iter()
-                .map(|s| gen_expr(s))
+                .map(|s| gen_expr(s, tab))
                 .collect::<Vec<String>>()
                 .join(", ");
 
@@ -180,7 +180,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
         Statement::CallSystemFun { fun, params } => {
             let params_text = params
                 .into_iter()
-                .map(|s| gen_expr(s))
+                .map(|s| gen_expr(s, tab))
                 .collect::<Vec<String>>()
                 .join(", ");
 
@@ -194,7 +194,7 @@ fn gen_statement(statement : Statement, tab : usize) -> String {
 }
 
 fn gen_if(if_statement : If, tab : usize) -> String {
-    let test = gen_expr(if_statement.test); 
+    let test = gen_expr(if_statement.test, tab); 
     let mut statements = vec![];
     for s in if_statement.statements {
         let st = gen_statement(s, tab + 1);
@@ -206,7 +206,7 @@ fn gen_if(if_statement : If, tab : usize) -> String {
     format!( "{} then\n{}", test, statements_text )
 }
 
-fn gen_expr(expr : Expr) -> String {
+fn gen_expr(expr : Expr, tab : usize) -> String {
     match expr {
         Expr::Nil => "nil".to_string(),
         Expr::Number(s) => s,
@@ -219,7 +219,7 @@ fn gen_expr(expr : Expr) -> String {
                 .into_iter()
                 .map(|a| format!( " [\"{}\"] = {} "
                                 , a.key
-                                , gen_expr(a.value)
+                                , gen_expr(a.value, tab)
                                 ))
                 .collect::<Vec<String>>()
                 .join("; ");
@@ -227,36 +227,50 @@ fn gen_expr(expr : Expr) -> String {
             format!( "{{ {} }}", assigns ) 
         },
         Expr::TableAccess { expr, slot } => {
-            let expr_text = gen_expr(*expr);
+            let expr_text = gen_expr(*expr, tab);
             format!( "{}.{}", expr_text, slot )
         },
         Expr::ListCons(exprs) => {
             let exprs_text = exprs
                 .into_iter()
-                .map(|e| gen_expr(e))
+                .map(|e| gen_expr(e, tab))
                 .collect::<Vec<String>>()
                 .join(", ");
             format!( "{{ {} }}", exprs_text )
         },
         Expr::ListAccess { expr, index } => {
-            let expr_text = gen_expr(*expr);
-            let index_text = gen_expr(*index);
+            let expr_text = gen_expr(*expr, tab);
+            let index_text = gen_expr(*index, tab);
             format!( "{}[ {} ]"
                    , expr_text
                    , index_text
                    )
         },
         Expr::FunCall { fun, params } => {
-            let fun_text = gen_expr(*fun);
+            let fun_text = gen_expr(*fun, tab);
             let params_text = params
                 .into_iter()
-                .map(|s| gen_expr(s))
+                .map(|s| gen_expr(s, tab))
                 .collect::<Vec<String>>()
                 .join(", ");
 
             format!( "{}( {} )"
                    , fun_text
                    , params_text
+                   )
+        },
+        Expr::Lambda { params, statements } => {
+            let params_text = params.join(", ");
+            let statements_text = statements
+                .into_iter()
+                .map(|s| gen_statement(s, tab + 1))
+                .map(|s| format!("{}\n", s))
+                .collect::<String>();
+
+            format!( "function ({}) {}{}end"
+                   , params_text
+                   , statements_text
+                   , " ".repeat(tab * 4)
                    )
         },
         _ => panic!("expr"),
