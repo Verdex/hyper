@@ -273,6 +273,11 @@ fn gen_expr(expr : Expr, tab : usize) -> String {
                    , " ".repeat(tab * 4)
                    )
         },
+        Expr::Paren(expr) => {
+            let expr_text = gen_expr(*expr, tab);
+
+            format!( "( {} )", expr_text )
+        },
         _ => panic!("expr"),
     }
 }
