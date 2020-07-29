@@ -278,6 +278,18 @@ fn gen_expr(expr : Expr, tab : usize) -> String {
 
             format!( "( {} )", expr_text )
         },
+        Expr::CallSystemFun { fun, params } => {
+            let params_text = params
+                .into_iter()
+                .map(|s| gen_expr(s, tab))
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            format!( "{}( {} )"
+                   , fun
+                   , params_text
+                   )
+        },
         _ => panic!("expr"),
     }
 }
