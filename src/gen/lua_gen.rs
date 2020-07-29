@@ -308,7 +308,6 @@ fn gen_expr(expr : Expr, tab : usize) -> String {
                    , fun
                    )
         },
-        _ => panic!("expr"),
     }
 }
 
