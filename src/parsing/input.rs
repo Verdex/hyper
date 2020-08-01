@@ -1,5 +1,5 @@
 
-use super::ast::*;
+use super::base_ast::*;
 use super::parse_error::ParseError;
 
 pub struct Input<'a> {

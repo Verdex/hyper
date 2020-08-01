@@ -1,5 +1,6 @@
 
-pub mod ast;
+pub mod base_ast;
+pub mod proc_ast;
 pub mod parse_error;
 mod input;
 mod misc;

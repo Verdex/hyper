@@ -1,10 +1,5 @@
 
-#[derive(Debug)]
-pub struct PSym {
-    pub start : usize,
-    pub end : usize,
-    pub value : String,
-}
+use super::base_ast::*;
 
 #[derive(Debug)]
 pub enum Type {

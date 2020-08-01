@@ -1,5 +1,6 @@
 
-use super::ast::*;
+use super::base_ast::*;
+use super::proc_ast::*;
 use super::parse_error::ParseError;
 use super::input::Input;
 
