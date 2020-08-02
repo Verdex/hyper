@@ -6,8 +6,6 @@ use super::input::Input;
 
 impl<'a> Input<'a> {
 
-    // TODO parse tuple in expr
-
     pub fn parse_statement(&mut self) -> Result<Statement, ParseError> {
         self.choice( &[ |input| input.parse_let() 
                       , |input| input.parse_if()
