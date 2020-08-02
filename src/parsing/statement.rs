@@ -131,16 +131,21 @@ impl<'a> Input<'a> {
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
                       
-                      // TODO struct cons
         let expr = self.choice( &[ |input| Ok(Expr::Number(input.parse_number()?))
                                  , |input| Ok(Expr::PString(input.parse_string()?))
                                  , |input| input.parse_bool()
                                  , |input| input.parse_lambda()
                                  , |input| input.parse_variable() 
+                                 , |input| input.parse_struct_cons()
                                  , |input| input.parse_paren_expr()
                                  ] )?;
 
         self.parse_post_expr(expr)
+    }
+
+    fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
+        // TODO 
+        Err(ParseError::ErrorAt(0, "".to_string()))
     }
 
     fn parse_variable(&mut self) -> Result<Expr, ParseError> {
