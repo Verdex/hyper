@@ -4,7 +4,7 @@ use super::parse_error::ParseError;
 use super::input::Input;
 
 
-pub fn parse_module(s : &str) -> Result<Mod, ParseError> {
+pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
     let ci = s.char_indices().collect::<Vec<(usize, char)>>();
     let mut input = Input::new(&ci);
     // TODO if everything fails then the zero or more is going to return no errors, which means we won't be able to show the 
