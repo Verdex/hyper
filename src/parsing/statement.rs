@@ -10,7 +10,6 @@ impl<'a> Input<'a> {
 
     pub fn parse_statement(&mut self) -> Result<Statement, ParseError> {
         self.choice( &[ |input| input.parse_let() 
-                      , |input| input.parse_match()
                       , |input| input.parse_if()
                       , |input| input.parse_elseif()
                       , |input| input.parse_else()
@@ -23,54 +22,6 @@ impl<'a> Input<'a> {
                       , |input| input.parse_break()
                       , |input| input.parse_continue()
                       ] )
-    }
-
-    fn parse_match(&mut self) -> Result<Statement, ParseError> {
-        self.expect("match")?;
-        let target = self.parse_expr()?;
-        self.expect("{")?;
-        let cases = self.zero_or_more(|input| input.parse_case())?;
-        self.expect("}")?;
-        Ok(Statement::Match { target, cases })
-    }
-
-    fn parse_case(&mut self) -> Result<MatchCase, ParseError> {
-        let pattern = self.parse_pattern()?;
-
-        let test = self.maybe(|input| {
-            input.expect("if")?;
-            input.parse_expr()
-        });
-
-        self.expect("=>")?;
-        match self.expect("{") {
-            Ok(_) => {
-                let statements = self.zero_or_more(|input| input.parse_statement())?; 
-                self.expect("}")?;
-                Ok(MatchCase { pattern, test, statements })
-            },
-            Err(_) => {
-                let statements = vec![self.parse_statement()?];
-                Ok(MatchCase { pattern, test, statements })
-            },
-        }
-    }
-
-    fn parse_pattern(&mut self) -> Result<MatchPattern, ParseError> {
-        let sym = self.parse_symbol()?;
-
-        if sym.value == "_" {
-            return Ok(MatchPattern::Wildcard);
-        }
-        
-        match self.expect("(") {
-            Ok(_) => {
-                let items = self.list(|input| input.parse_pattern())?;
-                self.expect(")")?;
-                Ok(MatchPattern::Cons(sym, items))
-            }
-            Err(_) => Ok(MatchPattern::Cons(sym, vec![])), 
-        }
     }
 
     fn parse_elseif(&mut self) -> Result<Statement, ParseError> {
@@ -414,35 +365,6 @@ mod test {
         let i = r#"(|z| z.b(5))(a)(b)?-blarg(a, b.c)()"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
         let _ = input.parse_expr()?;
-        Ok(())
-    }
-
-    #[test]
-    fn should_parse_empty_match() -> Result<(), ParseError> {
-        let i = r#"
-match a {
-
-}"#.char_indices().collect::<Vec<(usize, char)>>();
-        let mut input = Input::new(&i);
-        let m = input.parse_match()?;
-        assert!( matches!( m, Statement::Match{..} ) );
-        Ok(())
-    }
-
-    #[test]
-    fn should_parse_match() -> Result<(), ParseError> {
-        let i = r#"
-match a.b()-c() {
-    A(b) if true => {
-        blah();
-        ikky();
-    }
-    A(B(c,d,e), G, E(_)) => a();
-    _ if false => return 8;
-}"#.char_indices().collect::<Vec<(usize, char)>>();
-        let mut input = Input::new(&i);
-        let m = input.parse_match()?;
-        assert!( matches!( m, Statement::Match{..} ) );
         Ok(())
     }
 
