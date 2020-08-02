@@ -7,9 +7,10 @@ pub enum Type {
     Simple(PSym),
     Index(PSym, Vec<Type>),
     Fun { input : Vec<Type>, output : Box<Type> },
-    Tuple(Vec<Type>),
+    Tuple(Vec<Type>), // TODO remove
     Namespace(Vec<PSym>, Box<Type>),
     Infer,
+    // TODO row type
 }
 
 #[derive(Debug)]
