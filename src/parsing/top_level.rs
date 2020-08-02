@@ -13,6 +13,9 @@ impl<'a> Input<'a> {
         Ok( TopLevel::FunDef { def: x, public: true } )
     }
 
+    // TODO struct def
+    // TODO enum
+
     fn parse_fun_def(&mut self) -> Result<FunDef, ParseError> {
         fn parse_param(input : &mut Input) -> Result<FunParam, ParseError> {
             let name = input.parse_symbol()?; 
