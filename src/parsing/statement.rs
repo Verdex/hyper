@@ -136,8 +136,8 @@ impl<'a> Input<'a> {
                                  , |input| input.parse_bool()
                                  , |input| input.parse_lambda()
                                  , |input| input.parse_result_cons()
-                                 , |input| input.parse_variable() 
                                  , |input| input.parse_struct_cons()
+                                 , |input| input.parse_variable() 
                                  , |input| input.parse_list_cons()
                                  , |input| input.parse_paren_expr()
                                  ] )?;
@@ -469,6 +469,18 @@ mod test {
         match u {
             Expr::ListCons(_) => {},
             e => panic!("Expected list cons but found {:?}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_anon_struct() -> Result<(), ParseError> {
+        let i = r#"new { blah : 5 }"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_expr()?;
+        match u {
+            Expr::StructCons { name: None, .. } => {},
+            e => panic!("Expected anon struct cons but found {:?}", e),
         }
         Ok(())
     }
