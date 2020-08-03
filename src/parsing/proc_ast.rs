@@ -45,7 +45,7 @@ pub enum Expr {
     Dash { object : Box<Expr>, func : PSym },
     StructCons { name : Option<PSym>, slots : Vec<StructSlot> },
     ArrayCons(Vec<Expr>),
-    ResultCons(Box<ResultValue>),
+    ResultCons(ResultValue),
 }
 
 #[derive(Debug)]
@@ -96,8 +96,8 @@ pub struct StructSlot {
 
 #[derive(Debug)]
 pub enum ResultValue {
-    Okay(Expr),
-    Error(Expr),
+    Okay(Box<Expr>),
+    Error(Box<Expr>),
 }
 
 #[derive(Debug)]

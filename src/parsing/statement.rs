@@ -158,7 +158,7 @@ impl<'a> Input<'a> {
                 self.expect("(")?;
                 let e = self.parse_expr()?;
                 self.expect(")")?;
-                return Ok(Expr::ResultCons(Box::new(ResultValue::Okay(e))));
+                return Ok(Expr::ResultCons(ResultValue::Okay(Box::new(e))));
             },
             Err(_) => {},
         }
@@ -167,7 +167,7 @@ impl<'a> Input<'a> {
         self.expect("(")?;
         let e = self.parse_expr()?;
         self.expect(")")?;
-        Ok(Expr::ResultCons(Box::new(ResultValue::Error(e))))
+        Ok(Expr::ResultCons(ResultValue::Error(Box::new(e))))
     }
 
     fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
@@ -431,8 +431,20 @@ mod test {
         let mut input = Input::new(&i);
         let u = input.parse_expr()?;
         match u {
-            Expr::ResultCons(_) => {},
-            e => panic!("Expected ResultCons but found {:?}", e),
+            Expr::ResultCons(ResultValue::Okay(_)) => {},
+            e => panic!("Expected ResultCons(Okay) but found {:?}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_err_result_cons() -> Result<(), ParseError> {
+        let i = r#"Err(blah::ikky)"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_expr()?;
+        match u {
+            Expr::ResultCons(ResultValue::Error(_)) => {},
+            e => panic!("Expected ResultCons(Error) but found {:?}", e),
         }
         Ok(())
     }
