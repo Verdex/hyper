@@ -46,6 +46,7 @@ pub enum Expr {
     StructCons { name : Option<PSym>, slots : Vec<StructSlot> },
     ListCons(Vec<Expr>),
     ResultCons(ResultValue),
+    // TODO enum
 }
 
 #[derive(Debug)]
