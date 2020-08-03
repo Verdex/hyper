@@ -143,6 +143,9 @@ impl<'a> Input<'a> {
         self.parse_post_expr(expr)
     }
 
+    // TODO list
+    // TODO result
+
     fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
         // TODO 
         Err(ParseError::ErrorAt(0, "".to_string()))

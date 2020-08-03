@@ -43,6 +43,8 @@ pub enum Expr {
     Try(Box<Expr>),
     Dot { object : Box<Expr>, slot : PSym },
     Dash { object : Box<Expr>, func : PSym },
+    StructCons { name : Option<PSym>, slots : Vec<StructSlot> },
+    ArrayCons { values : Vec<Expr> },
 }
 
 #[derive(Debug)]
@@ -83,6 +85,12 @@ pub struct Struct {
 pub struct StructItem {
     pub name : PSym,
     pub item_type : Type,
+}
+
+#[derive(Debug)]
+pub struct StructSlot {
+    pub name : PSym,
+    pub value : Expr,
 }
 
 #[derive(Debug)]
