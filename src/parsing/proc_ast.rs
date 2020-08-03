@@ -73,6 +73,19 @@ pub enum TopLevel {
 }
 
 #[derive(Debug)]
+pub struct Struct {
+    pub name : PSym, 
+    pub type_params : Vec<PSym>, 
+    pub items : Vec<StructItem>,
+}
+
+#[derive(Debug)]
+pub struct StructItem {
+    pub name : PSym,
+    pub item_type : Type,
+}
+
+#[derive(Debug)]
 pub struct FunDef {
     pub name : PSym, 
     pub type_params : Vec<PSym>, 
