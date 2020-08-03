@@ -135,10 +135,10 @@ impl<'a> Input<'a> {
                                  , |input| Ok(Expr::PString(input.parse_string()?))
                                  , |input| input.parse_bool()
                                  , |input| input.parse_lambda()
+                                 , |input| input.parse_result_cons()
                                  , |input| input.parse_variable() 
                                  , |input| input.parse_struct_cons()
                                  , |input| input.parse_list_cons()
-                                 , |input| input.parse_result_cons()
                                  , |input| input.parse_paren_expr()
                                  ] )?;
 
@@ -422,6 +422,18 @@ mod test {
         assert_eq!( ns.len(), 2 );
         assert_eq!( ns[0].value, "alpha" );
         assert_eq!( ns[1].value, "beta" );
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_ok_result_cons() -> Result<(), ParseError> {
+        let i = r#"Ok(blah::ikky)"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_expr()?;
+        match u {
+            Expr::ResultCons(_) => {},
+            e => panic!("Expected ResultCons but found {:?}", e),
+        }
         Ok(())
     }
 }
