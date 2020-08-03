@@ -44,7 +44,7 @@ pub enum Expr {
     Dot { object : Box<Expr>, slot : PSym },
     Dash { object : Box<Expr>, func : PSym },
     StructCons { name : Option<PSym>, slots : Vec<StructSlot> },
-    ArrayCons { values : Vec<Expr> },
+    ArrayCons(Vec<Expr>),
     ResultCons(Box<ResultValue>),
 }
 

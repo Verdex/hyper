@@ -146,8 +146,10 @@ impl<'a> Input<'a> {
     }
 
     fn parse_list_cons(&mut self) -> Result<Expr, ParseError> {
-        // TODO 
-        Err(ParseError::ErrorAt(0, "".to_string()))
+        self.expect("[")?;
+        let es = self.list(|input| input.parse_expr())?;
+        self.expect("]")?;
+        Ok(Expr::ArrayCons(es))
     }
 
     fn parse_result_cons(&mut self) -> Result<Expr, ParseError> {
