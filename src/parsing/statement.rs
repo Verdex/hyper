@@ -149,7 +149,7 @@ impl<'a> Input<'a> {
         self.expect("[")?;
         let es = self.list(|input| input.parse_expr())?;
         self.expect("]")?;
-        Ok(Expr::ArrayCons(es))
+        Ok(Expr::ListCons(es))
     }
 
     fn parse_result_cons(&mut self) -> Result<Expr, ParseError> {
@@ -445,6 +445,30 @@ mod test {
         match u {
             Expr::ResultCons(ResultValue::Error(_)) => {},
             e => panic!("Expected ResultCons(Error) but found {:?}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_list_cons() -> Result<(), ParseError> {
+        let i = r#"[1,2,3,4]"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_expr()?;
+        match u {
+            Expr::ListCons(_) => {},
+            e => panic!("Expected list cons but found {:?}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_nested_list_cons() -> Result<(), ParseError> {
+        let i = r#"[ [1], [1, 2], [], [4, 5] ]"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_expr()?;
+        match u {
+            Expr::ListCons(_) => {},
+            e => panic!("Expected list cons but found {:?}", e),
         }
         Ok(())
     }
