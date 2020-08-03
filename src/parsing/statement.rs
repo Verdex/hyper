@@ -137,14 +137,36 @@ impl<'a> Input<'a> {
                                  , |input| input.parse_lambda()
                                  , |input| input.parse_variable() 
                                  , |input| input.parse_struct_cons()
+                                 , |input| input.parse_list_cons()
+                                 , |input| input.parse_result_cons()
                                  , |input| input.parse_paren_expr()
                                  ] )?;
 
         self.parse_post_expr(expr)
     }
 
-    // TODO list
-    // TODO result
+    fn parse_list_cons(&mut self) -> Result<Expr, ParseError> {
+        // TODO 
+        Err(ParseError::ErrorAt(0, "".to_string()))
+    }
+
+    fn parse_result_cons(&mut self) -> Result<Expr, ParseError> {
+        match self.expect("Ok") {
+            Ok(_) => {
+                self.expect("(")?;
+                let e = self.parse_expr()?;
+                self.expect(")")?;
+                return Ok(Expr::ResultCons(Box::new(ResultValue::Okay(e))));
+            },
+            Err(_) => {},
+        }
+
+        self.expect("Err")?;
+        self.expect("(")?;
+        let e = self.parse_expr()?;
+        self.expect(")")?;
+        Ok(Expr::ResultCons(Box::new(ResultValue::Error(e))))
+    }
 
     fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
         // TODO 
