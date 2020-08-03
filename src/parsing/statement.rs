@@ -171,8 +171,18 @@ impl<'a> Input<'a> {
     }
 
     fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
-        // TODO 
-        Err(ParseError::ErrorAt(0, "".to_string()))
+        fn parse_struct_slot(input : &mut Input) -> Result<StructSlot, ParseError> {
+            let name = input.parse_symbol()?;
+            input.expect(":")?;
+            let value = input.parse_expr()?;
+            Ok(StructSlot { name, value })
+        }
+        self.expect("new")?;
+        let name = self.maybe(|input| input.parse_symbol());
+        self.expect("{")?;
+        let slots = self.list(|input| parse_struct_slot(input))?;
+        self.expect("}")?;
+        Ok(Expr::StructCons { name, slots })
     }
 
     fn parse_variable(&mut self) -> Result<Expr, ParseError> {
