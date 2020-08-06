@@ -107,11 +107,9 @@ impl<'a> Input<'a> {
                         Ok( FunDef { name, type_params: vec![], params, return_type: Type::Unit, definition } )
                     }, 
                 }
-
             },
         }
     }
-
 }
 
 
@@ -119,4 +117,5 @@ impl<'a> Input<'a> {
 mod test {
     use super::*;
 
+    
 }
