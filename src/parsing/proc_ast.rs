@@ -46,7 +46,6 @@ pub enum Expr {
     StructCons { name : Option<PSym>, slots : Vec<StructSlot> },
     ListCons(Vec<Expr>),
     ResultCons(ResultValue),
-    // TODO enum
 }
 
 #[derive(Debug)]
@@ -57,7 +56,6 @@ pub enum Statement {
     Let { name : PSym, value_type : Type, expr : Expr },
     Set { target : Expr, new_value : Expr },
     Break,
-    Continue,
     While { test : Expr, statements : Vec<Statement> },
     Foreach { var : PSym, items : Expr, statements : Vec<Statement> },
     If { test : Expr, statements : Vec<Statement> },

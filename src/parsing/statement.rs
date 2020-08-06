@@ -18,7 +18,6 @@ impl<'a> Input<'a> {
                       , |input| input.parse_foreach()
                       , |input| input.parse_while()
                       , |input| input.parse_break()
-                      , |input| input.parse_continue()
                       ] )
     }
 
@@ -66,12 +65,6 @@ impl<'a> Input<'a> {
         let statements = self.zero_or_more(|input| input.parse_statement())?;
         self.expect("}")?;
         Ok(Statement::While { test, statements })
-    }
-
-    fn parse_continue(&mut self) -> Result<Statement, ParseError> {
-        self.expect("continue")?;
-        self.expect(";")?;
-        Ok(Statement::Continue)
     }
 
     fn parse_break(&mut self) -> Result<Statement, ParseError> {
