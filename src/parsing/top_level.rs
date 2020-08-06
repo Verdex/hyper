@@ -29,12 +29,7 @@ impl<'a> Input<'a> {
                 None => vec![],
             }
         }
-        /*
-            struct x<a,b,c> {
-                blah : a,
-                blah : int
-            }
-        */
+
         self.expect("struct")?;
         let name = self.parse_symbol()?;
         let type_params = to_vec(self.maybe(|input| {
