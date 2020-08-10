@@ -117,5 +117,22 @@ impl<'a> Input<'a> {
 mod test {
     use super::*;
 
+    #[test]
+    fn should_parse_fun_def() -> Result<(), ParseError> {
+        let i = r#"
+fun blah() {
+    return 0;
+}"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_fun_def()?;
+        
+        assert_eq!( u.name.value, "blah" );
+        assert_eq!( u.type_params.len(), 0 );
+        assert_eq!( u.params.len(), 0 );
+        assert_eq!( u.definition.len(), 1 );
+        assert!( matches!( u.return_type, Type::Unit ) );
+
+        Ok(())
+    }
     
 }
