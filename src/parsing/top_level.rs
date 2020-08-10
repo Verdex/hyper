@@ -158,4 +158,22 @@ fun blah<a,b,c>( a : b, c : d ) -> number {
 
         Ok(())
     }
+
+    #[test]
+    fn should_parse_enum() -> Result<(), ParseError> {
+        let i = r#"
+enum blah {
+    One,
+    Two, 
+    Three
+}"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_enum_def()?;
+        
+        assert_eq!( u.name.value, "blah" );
+        assert_eq!( u.items.len(), 3 );
+        assert_eq!( u.items[0].value, "One" ); 
+
+        Ok(())
+    }
 }
