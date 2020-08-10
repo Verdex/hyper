@@ -173,6 +173,45 @@ enum blah {
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.items.len(), 3 );
         assert_eq!( u.items[0].value, "One" ); 
+        assert_eq!( u.items[1].value, "Two" ); 
+        assert_eq!( u.items[2].value, "Three" ); 
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_struct() -> Result<(), ParseError> {
+        let i = r#"
+struct blah {
+    a : b,
+    c : d
+}"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_struct_def()?;
+        
+        assert_eq!( u.name.value, "blah" );
+        assert_eq!( u.type_params.len(), 0 );
+        assert_eq!( u.items.len(), 2 );
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_struct_with_type_params() -> Result<(), ParseError> {
+        let i = r#"
+struct blah<a,b,c> {
+    a : b,
+    c : d
+}"#.char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_struct_def()?;
+        
+        assert_eq!( u.name.value, "blah" );
+        assert_eq!( u.items.len(), 2 );
+        assert_eq!( u.type_params.len(), 3 );
+        assert_eq!( u.type_params[0].value, "a" );
+        assert_eq!( u.type_params[1].value, "b" );
+        assert_eq!( u.type_params[2].value, "c" );
 
         Ok(())
     }
