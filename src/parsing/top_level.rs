@@ -7,10 +7,34 @@ use super::input::Input;
 impl<'a> Input<'a> {
 
     pub fn parse_top_level(&mut self) -> Result<TopLevel, ParseError> {
-        // TODO pub?
-        let x = self.parse_fun_def()?;
-        //Ok( TopLevel::FunDef { def: self.parse_fun_def()?, public: true } )
-        Ok( TopLevel::FunDef { def: x, public: true } )
+        fn t<T>( v : Option<T> ) -> bool {
+            match v {
+                Some(_) => true,
+                None => false,
+            }
+        }
+
+        match self.parse_use() {
+            Ok(v) => return Ok(TopLevel::Import(v)),
+            Err(_) => { },
+        }
+
+        let public = self.maybe(|i| i.expect("pub"));
+        
+        match self.parse_fun_def() {
+            Ok(def) => return Ok(TopLevel::FunDef{ def, public: t(public) }),
+            Err(_) => { },
+        }
+
+        match self.parse_struct_def() {
+            Ok(def) => return Ok(TopLevel::StructDef { def, public: t(public) }),
+            Err(_) => { },
+        }
+
+        match self.parse_enum_def() {
+            Ok(def) => Ok(TopLevel::EnumDef { def, public: t(public) }),
+            Err(e) => Err(e),
+        }
     }
 
     fn parse_enum_def(&mut self) -> Result<EnumDef, ParseError> {

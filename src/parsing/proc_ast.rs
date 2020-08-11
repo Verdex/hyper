@@ -71,7 +71,10 @@ pub struct Mod {
 
 #[derive(Debug)]
 pub enum TopLevel {
-    FunDef { def : FunDef, public : bool }
+    FunDef { def : FunDef, public : bool },
+    EnumDef { def : EnumDef, public : bool },
+    StructDef { def : StructDef, public : bool },
+    Import(Use),
 }
 
 #[derive(Debug)]

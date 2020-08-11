@@ -20,6 +20,7 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
                 }
                 fun_defs.push(def);
             }
+            _ => panic!("missing case"),
         }
     }
     Ok( Mod { fun_defs, fun_exports } )
