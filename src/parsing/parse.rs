@@ -12,6 +12,12 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
     let top_level_items = input.zero_or_more(|i| i.parse_top_level() )?; 
     let mut fun_defs = vec![];
     let mut fun_exports = vec![];
+
+    let mut struct_defs = vec![];
+    let mut struct_exports = vec![];
+
+    let mut enum_defs = vec![];
+    let mut enum_exports = vec![];
     for item in top_level_items.into_iter() {
         match item {
             TopLevel::FunDef { def, public } => {
@@ -23,7 +29,13 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
             _ => panic!("missing case"),
         }
     }
-    Ok( Mod { fun_defs, fun_exports } )
+    Ok( Mod { fun_defs
+            , fun_exports 
+            , struct_defs
+            , struct_exports
+            , enum_defs
+            , enum_exports
+            } )
     // TODO make sure we make sure we've consumed the entire input
 }
 

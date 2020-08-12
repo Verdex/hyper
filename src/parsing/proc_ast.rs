@@ -66,7 +66,11 @@ pub enum Statement {
 #[derive(Debug)]
 pub struct Mod {
     pub fun_defs : Vec<FunDef>,
+    pub struct_defs : Vec<StructDef>,
+    pub enum_defs : Vec<EnumDef>,
     pub fun_exports : Vec<String>,
+    pub struct_exports : Vec<String>,
+    pub enum_exports : Vec<String>,
 }
 
 #[derive(Debug)]
