@@ -18,6 +18,9 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
 
     let mut enum_defs = vec![];
     let mut enum_exports = vec![];
+
+    let mut uses = vec![];
+
     for item in top_level_items.into_iter() {
         match item {
             TopLevel::FunDef { def, public: true } => {
@@ -41,17 +44,22 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
             TopLevel::EnumDef { def, public: false } => {
                 enum_defs.push(def);
             },
-            _ => panic!("missing case"),
+            TopLevel::Import(u) => {
+                uses.push(u);
+            },
         }
     }
+
+    input.expect_end()?;
+
     Ok( Mod { fun_defs
             , fun_exports 
             , struct_defs
             , struct_exports
             , enum_defs
             , enum_exports
+            , uses
             } )
-    // TODO make sure we make sure we've consumed the entire input
 }
 
 

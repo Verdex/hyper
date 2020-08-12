@@ -17,6 +17,15 @@ impl<'a> Input<'a> {
         Input { data: input }
     }
 
+    pub fn expect_end(&mut self) -> Result<(), ParseError> {
+        self.clear()?;
+
+        match self.data {
+            [] => Ok(()),
+            [(i,c), ..] => Err(ParseError::ErrorAt(*i, format!("Expected end of input, but found {:?}", *c))),
+        }
+    }
+
     pub fn clear(&mut self) -> Result<(), ParseError> { 
         let mut d = self.data;
         let mut comment = 0;

@@ -71,6 +71,7 @@ pub struct Mod {
     pub fun_exports : Vec<String>,
     pub struct_exports : Vec<String>,
     pub enum_exports : Vec<String>,
+    pub uses : Vec<Use>,
 }
 
 #[derive(Debug)]
