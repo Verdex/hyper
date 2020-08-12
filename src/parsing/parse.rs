@@ -20,12 +20,27 @@ pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
     let mut enum_exports = vec![];
     for item in top_level_items.into_iter() {
         match item {
-            TopLevel::FunDef { def, public } => {
-                if public {
-                    fun_exports.push(def.name.value.clone());
-                }
+            TopLevel::FunDef { def, public: true } => {
+                fun_exports.push(def.name.value.clone());
                 fun_defs.push(def);
-            }
+            },
+            TopLevel::FunDef { def, public: false } => {
+                fun_defs.push(def);
+            },
+            TopLevel::StructDef { def, public: true } => {
+                struct_exports.push(def.name.value.clone());
+                struct_defs.push(def);
+            },
+            TopLevel::StructDef { def, public: false } => {
+                struct_defs.push(def);
+            },
+            TopLevel::EnumDef { def, public: true } => {
+                enum_exports.push(def.name.value.clone());
+                enum_defs.push(def);
+            },
+            TopLevel::EnumDef { def, public: false } => {
+                enum_defs.push(def);
+            },
             _ => panic!("missing case"),
         }
     }
