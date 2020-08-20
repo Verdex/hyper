@@ -1,5 +1,5 @@
 
-use parse_input::{Input, ParseError};
+use parse_input::{Input, PSym, ParseError};
 use parse_type::{Type, parse_type};
 use super::statement::parse_statement;
 use super::proc_ast::*;
@@ -175,11 +175,15 @@ fn parse_fun_def(input : &mut Input) -> Result<FunDef, ParseError> {
 mod test {
     use super::*;
 
+    fn sym_proj(v : &PSym) -> String {
+        v.value.to_string()
+    }
+
     #[test]
     fn should_parse_empty_use() -> Result<(), ParseError> {
         let i = "use symb::{};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 0 );
         assert_eq!( u.namespace.len(), 1);
         assert_eq!( sym_proj(&u.namespace[0]), "symb" );
@@ -190,7 +194,7 @@ mod test {
     fn should_parse_use_with_everything() -> Result<(), ParseError> {
         let i = "use symb::{*};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 1 );
         assert!( matches!( u.imports[0], Import::Everything ) );
         assert_eq!( u.namespace.len(), 1);
@@ -202,7 +206,7 @@ mod test {
     fn should_parse_use_with_everythings() -> Result<(), ParseError> {
         let i = "use symb::{*, *};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 2 );
         assert!( matches!( u.imports[0], Import::Everything ) );
         assert!( matches!( u.imports[1], Import::Everything ) );
@@ -215,7 +219,7 @@ mod test {
     fn should_parse_use_with_long_namespace() -> Result<(), ParseError> {
         let i = "use symb::other::some::{*, *};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 2 );
         assert!( matches!( u.imports[0], Import::Everything ) );
         assert!( matches!( u.imports[1], Import::Everything ) );
@@ -230,7 +234,7 @@ mod test {
     fn should_parse_use_with_everything_and_item() -> Result<(), ParseError> {
         let i = "use symb::other::some::{*, item};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 2 );
         assert!( matches!( u.imports[0], Import::Everything ) );
         assert!( matches!( u.imports[1], Import::Item(_) ) );
@@ -250,7 +254,7 @@ mod test {
     fn should_parse_use_with_items() -> Result<(), ParseError> {
         let i = "use symb::other::some::{item1, item2};".char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_use()?;
+        let u = parse_use(&mut input)?;
         assert_eq!( u.imports.len(), 2 );
         assert!( matches!( u.imports[0], Import::Item(_) ) );
         assert!( matches!( u.imports[1], Import::Item(_) ) );
@@ -277,7 +281,7 @@ fun blah() {
     return 0;
 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_fun_def()?;
+        let u = parse_fun_def(&mut input)?;
         
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.type_params.len(), 0 );
@@ -295,7 +299,7 @@ fun blah<a,b,c>( a : b, c : d ) -> number {
     return 0;
 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_fun_def()?;
+        let u = parse_fun_def(&mut input)?;
         
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.type_params.len(), 3 );
@@ -321,7 +325,7 @@ enum blah {
     Three
 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_enum_def()?;
+        let u = parse_enum_def(&mut input)?;
         
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.items.len(), 3 );
@@ -340,7 +344,7 @@ struct blah {
     c : d
 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_struct_def()?;
+        let u = parse_struct_def(&mut input)?;
         
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.type_params.len(), 0 );
@@ -357,7 +361,7 @@ struct blah<a,b,c> {
     c : d
 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_struct_def()?;
+        let u = parse_struct_def(&mut input)?;
         
         assert_eq!( u.name.value, "blah" );
         assert_eq!( u.items.len(), 2 );

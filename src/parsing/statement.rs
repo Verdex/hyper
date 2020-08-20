@@ -303,7 +303,7 @@ mod test {
     fn should_parse_expr_lambda() -> Result<(), ParseError> {
         let i = r#"|a, b, c| 0"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_lambda()?;
+        let u = parse_lambda(&mut input)?;
         assert!( matches!( u, Expr::ExprLambda { .. } ) );
         Ok(())
     }
@@ -312,7 +312,7 @@ mod test {
     fn should_parse_statement_lambda() -> Result<(), ParseError> {
         let i = r#"|a, b, c| { return 0; }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_lambda()?;
+        let u = parse_lambda(&mut input)?;
         assert!( matches!( u, Expr::StatementLambda { .. } ) );
         Ok(())
     }
@@ -321,7 +321,7 @@ mod test {
     fn should_parse_statement_lambda_with_types() -> Result<(), ParseError> {
         let i = r#"|a : A, b : B, c| -> R { return 0; }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_lambda()?;
+        let u = parse_lambda(&mut input)?;
         assert!( matches!( u, Expr::StatementLambda { .. } ) );
         Ok(())
     }
@@ -330,7 +330,7 @@ mod test {
     fn should_parse_expr_lambda_with_types() -> Result<(), ParseError> {
         let i = r#"|a, b : B, c : C| -> R<T> 0"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_lambda()?;
+        let u = parse_lambda(&mut input)?;
         assert!( matches!( u, Expr::ExprLambda { .. } ) );
         Ok(())
     }
@@ -339,7 +339,7 @@ mod test {
     fn should_parse_call() -> Result<(), ParseError> {
         let i = r#"x()"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         assert!( matches!( u, Expr::Call { .. } ) );
         Ok(())
     }
@@ -348,7 +348,7 @@ mod test {
     fn should_parse_call_call() -> Result<(), ParseError> {
         let i = r#"x()()"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         let call = match u {
            Expr::Call { func, .. } => *func, 
            e => panic!("expected call but found {:?}", e),
@@ -362,7 +362,7 @@ mod test {
     fn should_parse_call_call_with_param() -> Result<(), ParseError> {
         let i = r#"x(a)(b)"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         let (call, mut params) = match u {
            Expr::Call { func, params } => (*func, params), 
            e => panic!("expected call but found {:?}", e),
@@ -396,7 +396,7 @@ mod test {
     fn should_parse_complex_post_expr() -> Result<(), ParseError> {
         let i = r#"(|z| z.b(5))(a)(b)?-blarg(a, b.c)()"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let _ = input.parse_expr()?;
+        let _ = parse_expr(&mut input)?;
         Ok(())
     }
 
@@ -404,7 +404,7 @@ mod test {
     fn should_parse_namespaced_variable() -> Result<(), ParseError> {
         let i = r#"alpha::beta::name"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         let (ns, n) = match u {
             Expr::Variable { namespace, name } => (namespace, name),
             e => panic!("Expected variable but found {:?}", e),
@@ -420,7 +420,7 @@ mod test {
     fn should_parse_ok_result_cons() -> Result<(), ParseError> {
         let i = r#"Ok(blah::ikky)"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::ResultCons(ResultValue::Okay(_)) => {},
             e => panic!("Expected ResultCons(Okay) but found {:?}", e),
@@ -432,7 +432,7 @@ mod test {
     fn should_parse_err_result_cons() -> Result<(), ParseError> {
         let i = r#"Err(blah::ikky)"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::ResultCons(ResultValue::Error(_)) => {},
             e => panic!("Expected ResultCons(Error) but found {:?}", e),
@@ -444,7 +444,7 @@ mod test {
     fn should_parse_list_cons() -> Result<(), ParseError> {
         let i = r#"[1,2,3,4]"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::ListCons(_) => {},
             e => panic!("Expected list cons but found {:?}", e),
@@ -456,7 +456,7 @@ mod test {
     fn should_parse_nested_list_cons() -> Result<(), ParseError> {
         let i = r#"[ [1], [1, 2], [], [4, 5] ]"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::ListCons(_) => {},
             e => panic!("Expected list cons but found {:?}", e),
@@ -468,7 +468,7 @@ mod test {
     fn should_parse_anon_struct() -> Result<(), ParseError> {
         let i = r#"new { blah : 5 }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::StructCons { name: None, .. } => {},
             e => panic!("Expected anon struct cons but found {:?}", e),
@@ -480,7 +480,7 @@ mod test {
     fn should_parse_anon_empty_struct() -> Result<(), ParseError> {
         let i = r#"new { }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::StructCons { name: None, .. } => {},
             e => panic!("Expected anon struct cons but found {:?}", e),
@@ -492,7 +492,7 @@ mod test {
     fn should_parse_named_struct() -> Result<(), ParseError> {
         let i = r#"new Blah { a: 1, b: [], c: new {} }"#.char_indices().collect::<Vec<(usize, char)>>();
         let mut input = Input::new(&i);
-        let u = input.parse_expr()?;
+        let u = parse_expr(&mut input)?;
         match u {
             Expr::StructCons { name: Some(_), .. } => {},
             e => panic!("Expected struct cons but found {:?}", e),
