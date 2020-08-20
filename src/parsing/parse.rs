@@ -1,14 +1,15 @@
 
+use parse_input::{Input, ParseError};
+
 use super::proc_ast::*;
-use super::parse_error::ParseError;
-use super::input::Input;
+use super::top_level::parse_top_level;
 
 
 pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
     let ci = s.char_indices().collect::<Vec<(usize, char)>>();
     let mut input = Input::new(&ci);
 
-    let top_level_items = input.zero_or_more(|i| i.parse_top_level() )?; 
+    let top_level_items = input.zero_or_more(parse_top_level)?; 
     let mut fun_defs = vec![];
     let mut fun_exports = vec![];
 
