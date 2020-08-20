@@ -1,138 +1,172 @@
 
-use super::base_ast::*;
+use parse_input::{Input, ParseError};
+use parse_type::{Type, parse_type};
+use super::statement::parse_statement;
 use super::proc_ast::*;
-use super::parse_error::ParseError;
-use super::input::Input;
 
-impl<'a> Input<'a> {
 
-    pub fn parse_top_level(&mut self) -> Result<TopLevel, ParseError> {
-        fn t<T>( v : Option<T> ) -> bool {
-            match v {
-                Some(_) => true,
-                None => false,
-            }
-        }
-
-        match self.parse_use() {
-            Ok(v) => return Ok(TopLevel::Import(v)),
-            Err(_) => { },
-        }
-
-        let public = self.maybe(|i| i.expect("pub"));
-        
-        match self.parse_fun_def() {
-            Ok(def) => return Ok(TopLevel::FunDef{ def, public: t(public) }),
-            Err(_) => { },
-        }
-
-        match self.parse_struct_def() {
-            Ok(def) => return Ok(TopLevel::StructDef { def, public: t(public) }),
-            Err(_) => { },
-        }
-
-        match self.parse_enum_def() {
-            Ok(def) => Ok(TopLevel::EnumDef { def, public: t(public) }),
-            Err(e) => Err(e),
+pub fn parse_top_level(input : &mut Input) -> Result<TopLevel, ParseError> {
+    fn t<T>( v : Option<T> ) -> bool {
+        match v {
+            Some(_) => true,
+            None => false,
         }
     }
 
-    fn parse_enum_def(&mut self) -> Result<EnumDef, ParseError> {
-        self.expect("enum")?;
-        let name = self.parse_symbol()?;
-        self.expect("{")?;
-        let items = self.list(|input| input.parse_symbol())?;
-        self.expect("}")?;
-        Ok(EnumDef { name, items })
+    match parse_use(input) {
+        Ok(v) => return Ok(TopLevel::Import(v)),
+        Err(_) => { },
     }
 
-    fn parse_struct_def(&mut self) -> Result<StructDef, ParseError> {
-        fn to_vec<T>( o : Option<Vec<T>> ) -> Vec<T> {
-            match o {
-                Some(v) => v,
-                None => vec![],
-            }
-        }
+    let public = input.maybe(|i| i.expect("pub"));
+    
+    match parse_fun_def(input) {
+        Ok(def) => return Ok(TopLevel::FunDef{ def, public: t(public) }),
+        Err(_) => { },
+    }
 
-        self.expect("struct")?;
-        let name = self.parse_symbol()?;
-        let type_params = to_vec(self.maybe(|input| {
-            input.expect("<")?;
-            let params = input.list(|i| i.parse_symbol())?;
+    match parse_struct_def(input) {
+        Ok(def) => return Ok(TopLevel::StructDef { def, public: t(public) }),
+        Err(_) => { },
+    }
+
+    match parse_enum_def(input) {
+        Ok(def) => Ok(TopLevel::EnumDef { def, public: t(public) }),
+        Err(e) => Err(e),
+    }
+}
+
+fn parse_use(input : &mut Input) -> Result<Use, ParseError> {
+    fn parse_star_or_sym(input : &mut Input) -> Result<Import, ParseError> {
+        match input.parse_symbol() {
+            Ok(sym) => return Ok(Import::Item(sym)),
+            Err(_) => (),
+        }
+        match input.expect("*") {
+            Ok(_) => return Ok(Import::Everything),
+            Err(x) => Err(x),
+        }
+    }
+
+    input.expect("use")?;
+
+    let mut namespace = vec![];
+
+    namespace.push(input.parse_symbol()?);
+
+    loop {
+        input.expect("::")?;
+        match input.expect("{") {
+            Ok(_) => break,
+            Err(_) => (),
+        }
+        namespace.push(input.parse_symbol()?);
+    }
+    
+    let imports = input.list(parse_star_or_sym)?;
+
+    input.expect("}")?;
+
+    input.expect(";")?;
+
+    Ok( Use { imports, namespace } )
+}
+
+fn parse_enum_def(input : &mut Input) -> Result<EnumDef, ParseError> {
+    input.expect("enum")?;
+    let name = input.parse_symbol()?;
+    input.expect("{")?;
+    let items = input.list(|i| i.parse_symbol())?;
+    input.expect("}")?;
+    Ok(EnumDef { name, items })
+}
+
+fn parse_struct_def(input : &mut Input) -> Result<StructDef, ParseError> {
+    fn to_vec<T>( o : Option<Vec<T>> ) -> Vec<T> {
+        match o {
+            Some(v) => v,
+            None => vec![],
+        }
+    }
+
+    input.expect("struct")?;
+    let name = input.parse_symbol()?;
+    let type_params = to_vec(input.maybe(|i| {
+        i.expect("<")?;
+        let params = i.list(|ii| ii.parse_symbol())?;
+        i.expect(">")?;
+        Ok(params)
+    }));
+    
+    input.expect("{")?; 
+    
+    let items = input.list(|i| {
+        let name = i.parse_symbol()?;
+        i.expect(":")?;
+        let item_type = parse_type(i)?;
+        Ok( StructItem { name, item_type } )
+    })?;
+
+    input.expect("}")?; 
+    Ok( StructDef { name, type_params, items } ) 
+}
+
+fn parse_fun_def(input : &mut Input) -> Result<FunDef, ParseError> {
+    fn parse_param(input : &mut Input) -> Result<FunParam, ParseError> {
+        let name = input.parse_symbol()?; 
+        input.expect(":")?;
+        let param_type = parse_type(input)?;
+        Ok(FunParam { name, param_type })
+    }
+
+    input.expect("fun")?;
+    
+    let name = input.parse_symbol()?;
+
+    match input.maybe(|i| i.expect("<")) {
+        Some(_) => {
+            let type_params = input.list(|i| i.parse_symbol())?;
             input.expect(">")?;
-            Ok(params)
-        }));
-        
-        self.expect("{")?; 
-        
-        let items = self.list(|input| {
-            let name = input.parse_symbol()?;
-            input.expect(":")?;
-            let item_type = input.parse_type()?;
-            Ok( StructItem { name, item_type } )
-        })?;
+            input.expect("(")?;
+            let params = input.list(parse_param)?;
+            input.expect(")")?;
+            match input.expect("->") {
+                Ok(_) => {
+                    let return_type = parse_type(input)?;
+                    input.expect("{")?;
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok( FunDef { name, type_params, params, return_type, definition } )
+                },
+                Err(_) => { 
+                    input.expect("{")?;
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok( FunDef { name, type_params, params, return_type: Type::Unit, definition } )
+                }, 
+            }
 
-        self.expect("}")?; 
-        Ok( StructDef { name, type_params, items } ) 
-    }
-
-    fn parse_fun_def(&mut self) -> Result<FunDef, ParseError> {
-        fn parse_param(input : &mut Input) -> Result<FunParam, ParseError> {
-            let name = input.parse_symbol()?; 
-            input.expect(":")?;
-            let param_type = input.parse_type()?;
-            Ok(FunParam { name, param_type })
-        }
-
-        self.expect("fun")?;
-        
-        let name = self.parse_symbol()?;
-
-        match self.maybe(|input| input.expect("<")) {
-            Some(_) => {
-                let type_params = self.list(|input| input.parse_symbol())?;
-                self.expect(">")?;
-                self.expect("(")?;
-                let params = self.list(parse_param)?;
-                self.expect(")")?;
-                match self.expect("->") {
-                    Ok(_) => {
-                        let return_type = self.parse_type()?;
-                        self.expect("{")?;
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok( FunDef { name, type_params, params, return_type, definition } )
-                    },
-                    Err(_) => { 
-                        self.expect("{")?;
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok( FunDef { name, type_params, params, return_type: Type::Unit, definition } )
-                    }, 
-                }
-
-            },
-            None => {
-                self.expect("(")?;
-                let params = self.list(parse_param)?;
-                self.expect(")")?;
-                match self.expect("->") {
-                    Ok(_) => {
-                        let return_type = self.parse_type()?;
-                        self.expect("{")?;
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok( FunDef { name, type_params: vec![], params, return_type, definition } )
-                    },
-                    Err(_) => { 
-                        self.expect("{")?;
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok( FunDef { name, type_params: vec![], params, return_type: Type::Unit, definition } )
-                    }, 
-                }
-            },
-        }
+        },
+        None => {
+            input.expect("(")?;
+            let params = input.list(parse_param)?;
+            input.expect(")")?;
+            match input.expect("->") {
+                Ok(_) => {
+                    let return_type = parse_type(input)?;
+                    input.expect("{")?;
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok( FunDef { name, type_params: vec![], params, return_type, definition } )
+                },
+                Err(_) => { 
+                    input.expect("{")?;
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok( FunDef { name, type_params: vec![], params, return_type: Type::Unit, definition } )
+                }, 
+            }
+        },
     }
 }
 
@@ -140,6 +174,101 @@ impl<'a> Input<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn should_parse_empty_use() -> Result<(), ParseError> {
+        let i = "use symb::{};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 0 );
+        assert_eq!( u.namespace.len(), 1);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        Ok(())
+    }
+    
+    #[test]
+    fn should_parse_use_with_everything() -> Result<(), ParseError> {
+        let i = "use symb::{*};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 1 );
+        assert!( matches!( u.imports[0], Import::Everything ) );
+        assert_eq!( u.namespace.len(), 1);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_use_with_everythings() -> Result<(), ParseError> {
+        let i = "use symb::{*, *};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 2 );
+        assert!( matches!( u.imports[0], Import::Everything ) );
+        assert!( matches!( u.imports[1], Import::Everything ) );
+        assert_eq!( u.namespace.len(), 1);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_use_with_long_namespace() -> Result<(), ParseError> {
+        let i = "use symb::other::some::{*, *};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 2 );
+        assert!( matches!( u.imports[0], Import::Everything ) );
+        assert!( matches!( u.imports[1], Import::Everything ) );
+        assert_eq!( u.namespace.len(), 3);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        assert_eq!( sym_proj(&u.namespace[1]), "other" );
+        assert_eq!( sym_proj(&u.namespace[2]), "some" );
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_use_with_everything_and_item() -> Result<(), ParseError> {
+        let i = "use symb::other::some::{*, item};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 2 );
+        assert!( matches!( u.imports[0], Import::Everything ) );
+        assert!( matches!( u.imports[1], Import::Item(_) ) );
+        match &u.imports[1] {
+            Import::Item(item) if sym_proj(&item) == "item" => (),
+            _ => assert!(false),
+        }
+        
+        assert_eq!( u.namespace.len(), 3);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        assert_eq!( sym_proj(&u.namespace[1]), "other" );
+        assert_eq!( sym_proj(&u.namespace[2]), "some" );
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_use_with_items() -> Result<(), ParseError> {
+        let i = "use symb::other::some::{item1, item2};".char_indices().collect::<Vec<(usize, char)>>();
+        let mut input = Input::new(&i);
+        let u = input.parse_use()?;
+        assert_eq!( u.imports.len(), 2 );
+        assert!( matches!( u.imports[0], Import::Item(_) ) );
+        assert!( matches!( u.imports[1], Import::Item(_) ) );
+        match &u.imports[0] {
+            Import::Item(item) if sym_proj(&item) == "item1" => (),
+            _ => assert!(false),
+        }
+        match &u.imports[1] {
+            Import::Item(item) if sym_proj(&item) == "item2" => (),
+            _ => assert!(false),
+        }
+        
+        assert_eq!( u.namespace.len(), 3);
+        assert_eq!( sym_proj(&u.namespace[0]), "symb" );
+        assert_eq!( sym_proj(&u.namespace[1]), "other" );
+        assert_eq!( sym_proj(&u.namespace[2]), "some" );
+        Ok(())
+    }
 
     #[test]
     fn should_parse_fun_def() -> Result<(), ParseError> {

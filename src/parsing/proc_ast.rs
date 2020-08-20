@@ -1,17 +1,6 @@
 
-use super::base_ast::*;
-
-#[derive(Debug)]
-pub enum Type {
-    Unit,
-    Simple(PSym),
-    Index(PSym, Vec<Type>),
-    Fun { input : Vec<Type>, output : Box<Type> },
-    Tuple(Vec<Type>), // TODO remove
-    Namespace(Vec<PSym>, Box<Type>),
-    Infer,
-    // TODO row type
-}
+use parse_input::PSym;
+use parse_type::Type;
 
 #[derive(Debug)]
 pub struct Use {

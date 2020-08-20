@@ -1,301 +1,299 @@
 
-use super::base_ast::*;
+use parse_input::{Input, ParseError};
+use parse_type::{Type, parse_type};
+
 use super::proc_ast::*;
-use super::parse_error::ParseError;
-use super::input::Input;
 
-impl<'a> Input<'a> {
 
-    pub fn parse_statement(&mut self) -> Result<Statement, ParseError> {
-        self.choice( &[ |input| input.parse_let() 
-                      , |input| input.parse_if()
-                      , |input| input.parse_elseif()
-                      , |input| input.parse_else()
-                      , |input| input.parse_set()
-                      , |input| input.parse_return() 
-                      , |input| input.parse_yield()
-                      , |input| input.parse_expr_statement()
-                      , |input| input.parse_foreach()
-                      , |input| input.parse_while()
-                      , |input| input.parse_break()
-                      ] )
+pub fn parse_statement(input : &mut Input) -> Result<Statement, ParseError> {
+    input.choice( &[ parse_let
+                   , parse_if
+                   , parse_elseif
+                   , parse_else
+                   , parse_set
+                   , parse_return 
+                   , parse_yield
+                   , parse_expr_statement
+                   , parse_foreach
+                   , parse_while
+                   , parse_break
+                   ] )
+}
+
+fn parse_elseif(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("elseif")?;
+    let test = parse_expr(input)?;
+    input.expect("{")?;
+    let statements = input.zero_or_more(parse_statement)?;
+    input.expect("}")?;
+    Ok(Statement::ElseIf { test, statements })
+}
+
+fn parse_else(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("else")?;
+    input.expect("{")?;
+    let statements = input.zero_or_more(parse_statement)?;
+    input.expect("}")?;
+    Ok(Statement::Else(statements))
+}
+
+fn parse_if(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("if")?;
+    let test = parse_expr(input)?;
+    input.expect("{")?;
+    let statements = input.zero_or_more(parse_statement)?;
+    input.expect("}")?;
+    Ok(Statement::If { test, statements })
+}
+
+fn parse_foreach(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("foreach")?;
+    let var = input.parse_symbol()?;
+    input.expect("in")?;
+    let items = parse_expr(input)?;
+    input.expect("{")?;
+    let statements = input.zero_or_more(parse_statement)?;
+    input.expect("}")?;
+    Ok(Statement::Foreach { var, items, statements })
+}
+
+fn parse_while(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("while")?;
+    let test = parse_expr(input)?;
+    input.expect("{")?;
+    let statements = input.zero_or_more(parse_statement)?;
+    input.expect("}")?;
+    Ok(Statement::While { test, statements })
+}
+
+fn parse_break(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("break")?;
+    input.expect(";")?;
+    Ok(Statement::Break)
+}
+
+fn parse_set(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("set")?;
+    let target = parse_expr(input)?;
+    input.expect("=")?;
+    let new_value = parse_expr(input)?;
+    input.expect(";")?;
+    Ok(Statement::Set { target, new_value })
+}
+
+fn parse_let(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("let")?;
+    let name = input.parse_symbol()?;
+    match input.expect(":") {
+        Ok(_) => {
+            let value_type = parse_type(input)?;
+            input.expect("=")?;
+            let expr = parse_expr(input)?;
+            input.expect(";")?;
+            Ok(Statement::Let { name, value_type, expr })
+        },
+        Err(_) => {
+            input.expect("=")?;
+            let expr = parse_expr(input)?;
+            input.expect(";")?;
+            Ok(Statement::Let { name, value_type: Type::Infer, expr })
+        },
+    }
+}
+
+fn parse_expr_statement(input : &mut Input) -> Result<Statement, ParseError> {
+    let expr = parse_expr(input)?;
+    input.expect(";")?;
+    Ok(Statement::Expr(expr))
+}
+
+fn parse_yield(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("yield")?;
+    let expr = input.maybe(parse_expr);
+    input.expect(";")?;
+    Ok(Statement::Yield(expr))
+}
+
+fn parse_return(input : &mut Input) -> Result<Statement, ParseError> {
+    input.expect("return")?;
+    let expr = input.maybe(parse_expr);
+    input.expect(";")?;
+    Ok(Statement::Return(expr))
+}
+
+fn parse_expr(input : &mut Input) -> Result<Expr, ParseError> {
+                  
+    let expr = input.choice( &[ |input| Ok(Expr::Number(input.parse_number()?))
+                              , |input| Ok(Expr::PString(input.parse_string()?))
+                              , parse_bool
+                              , parse_lambda
+                              , parse_result_cons
+                              , parse_struct_cons
+                              , parse_variable
+                              , parse_list_cons
+                              , parse_paren_expr
+                              ] )?;
+
+    parse_post_expr(input, expr)
+}
+
+fn parse_list_cons(input : &mut Input) -> Result<Expr, ParseError> {
+    input.expect("[")?;
+    let es = input.list(parse_expr)?;
+    input.expect("]")?;
+    Ok(Expr::ListCons(es))
+}
+
+fn parse_result_cons(input : &mut Input) -> Result<Expr, ParseError> {
+    match input.expect("Ok") {
+        Ok(_) => {
+            input.expect("(")?;
+            let e = parse_expr(input)?;
+            input.expect(")")?;
+            return Ok(Expr::ResultCons(ResultValue::Okay(Box::new(e))));
+        },
+        Err(_) => {},
     }
 
-    fn parse_elseif(&mut self) -> Result<Statement, ParseError> {
-        self.expect("elseif")?;
-        let test = self.parse_expr()?;
-        self.expect("{")?;
-        let statements = self.zero_or_more(|input| input.parse_statement())?;
-        self.expect("}")?;
-        Ok(Statement::ElseIf { test, statements })
+    input.expect("Err")?;
+    input.expect("(")?;
+    let e = parse_expr(input)?;
+    input.expect(")")?;
+    Ok(Expr::ResultCons(ResultValue::Error(Box::new(e))))
+}
+
+fn parse_struct_cons(input : &mut Input) -> Result<Expr, ParseError> {
+    fn parse_struct_slot(input : &mut Input) -> Result<StructSlot, ParseError> {
+        let name = input.parse_symbol()?;
+        input.expect(":")?;
+        let value = parse_expr(input)?;
+        Ok(StructSlot { name, value })
+    }
+    input.expect("new")?;
+    let name = input.maybe(|i| i.parse_symbol());
+    input.expect("{")?;
+    let slots = input.list(parse_struct_slot)?;
+    input.expect("}")?;
+    Ok(Expr::StructCons { name, slots })
+}
+
+fn parse_variable(input : &mut Input) -> Result<Expr, ParseError> {
+    let namespace = input.zero_or_more(|i| {
+        let v = i.parse_symbol()?;
+        i.expect("::")?;
+        Ok(v)
+    })?;
+
+    let name = input.parse_symbol()?;
+    Ok(Expr::Variable { namespace, name })
+}
+
+fn parse_paren_expr(input : &mut Input) -> Result<Expr, ParseError> {
+    input.expect("(")?;
+    let expr = parse_expr(input)?;
+    input.expect(")")?;
+    Ok(expr)
+}
+
+// dash call, call, dot, try
+fn parse_post_expr(input : &mut Input, e : Expr) -> Result<Expr, ParseError> {
+    match input.expect("-") {
+        Ok(_) => {
+            let func = input.parse_symbol()?;
+            return parse_post_expr(input, Expr::Dash { object: Box::new(e), func });
+        },
+        Err(_) => (),
     }
 
-    fn parse_else(&mut self) -> Result<Statement, ParseError> {
-        self.expect("else")?;
-        self.expect("{")?;
-        let statements = self.zero_or_more(|input| input.parse_statement())?;
-        self.expect("}")?;
-        Ok(Statement::Else(statements))
+    match input.expect(".") {
+        Ok(_) => {
+            let slot = input.parse_symbol()?;
+            return parse_post_expr(input, Expr::Dot { object: Box::new(e), slot });
+        },
+        Err(_) => (),
     }
 
-    fn parse_if(&mut self) -> Result<Statement, ParseError> {
-        self.expect("if")?;
-        let test = self.parse_expr()?;
-        self.expect("{")?;
-        let statements = self.zero_or_more(|input| input.parse_statement())?;
-        self.expect("}")?;
-        Ok(Statement::If { test, statements })
+    match input.expect("(") {
+        Ok(_) => {
+            let params = input.list(parse_expr)?;
+
+            input.expect(")")?; 
+        
+            return parse_post_expr(input, Expr::Call { func: Box::new(e), params });
+        },
+        Err(_) => (),
     }
 
-    fn parse_foreach(&mut self) -> Result<Statement, ParseError> {
-        self.expect("foreach")?;
-        let var = self.parse_symbol()?;
-        self.expect("in")?;
-        let items = self.parse_expr()?;
-        self.expect("{")?;
-        let statements = self.zero_or_more(|input| input.parse_statement())?;
-        self.expect("}")?;
-        Ok(Statement::Foreach { var, items, statements })
+    match input.expect("?") {
+        Ok(_) => return parse_post_expr(input, Expr::Try(Box::new(e))),
+        Err(_) => (),
     }
 
-    fn parse_while(&mut self) -> Result<Statement, ParseError> {
-        self.expect("while")?;
-        let test = self.parse_expr()?;
-        self.expect("{")?;
-        let statements = self.zero_or_more(|input| input.parse_statement())?;
-        self.expect("}")?;
-        Ok(Statement::While { test, statements })
-    }
+    Ok(e)
+}
 
-    fn parse_break(&mut self) -> Result<Statement, ParseError> {
-        self.expect("break")?;
-        self.expect(";")?;
-        Ok(Statement::Break)
-    }
-
-    fn parse_set(&mut self) -> Result<Statement, ParseError> {
-        self.expect("set")?;
-        let target = self.parse_expr()?;
-        self.expect("=")?;
-        let new_value = self.parse_expr()?;
-        self.expect(";")?;
-        Ok(Statement::Set { target, new_value })
-    }
-
-    fn parse_let(&mut self) -> Result<Statement, ParseError> {
-        self.expect("let")?;
-        let name = self.parse_symbol()?;
-        match self.expect(":") {
-            Ok(_) => {
-                let value_type = self.parse_type()?;
-                self.expect("=")?;
-                let expr = self.parse_expr()?;
-                self.expect(";")?;
-                Ok(Statement::Let { name, value_type, expr })
+fn parse_lambda(input : &mut Input) -> Result<Expr, ParseError> {
+    fn parse_param(input : &mut Input) -> Result<FunParam, ParseError> {
+        let name = input.parse_symbol()?; 
+        match input.expect(":") {
+            Ok(_) => { 
+                let param_type = parse_type(input)?;
+                Ok(FunParam { name, param_type })
             },
             Err(_) => {
-                self.expect("=")?;
-                let expr = self.parse_expr()?;
-                self.expect(";")?;
-                Ok(Statement::Let { name, value_type: Type::Infer, expr })
+                Ok(FunParam { name, param_type: Type::Infer })
             },
         }
     }
-
-    fn parse_expr_statement(&mut self) -> Result<Statement, ParseError> {
-        let expr = self.parse_expr()?;
-        self.expect(";")?;
-        Ok(Statement::Expr(expr))
-    }
-
-    fn parse_yield(&mut self) -> Result<Statement, ParseError> {
-        self.expect("yield")?;
-        let expr = self.maybe( |input| input.parse_expr() );
-        self.expect(";")?;
-        Ok(Statement::Yield(expr))
-    }
-
-    fn parse_return(&mut self) -> Result<Statement, ParseError> {
-        self.expect("return")?;
-        let expr = self.maybe( |input| input.parse_expr() );
-        self.expect(";")?;
-        Ok(Statement::Return(expr))
-    }
-
-    fn parse_expr(&mut self) -> Result<Expr, ParseError> {
-                      
-        let expr = self.choice( &[ |input| Ok(Expr::Number(input.parse_number()?))
-                                 , |input| Ok(Expr::PString(input.parse_string()?))
-                                 , |input| input.parse_bool()
-                                 , |input| input.parse_lambda()
-                                 , |input| input.parse_result_cons()
-                                 , |input| input.parse_struct_cons()
-                                 , |input| input.parse_variable() 
-                                 , |input| input.parse_list_cons()
-                                 , |input| input.parse_paren_expr()
-                                 ] )?;
-
-        self.parse_post_expr(expr)
-    }
-
-    fn parse_list_cons(&mut self) -> Result<Expr, ParseError> {
-        self.expect("[")?;
-        let es = self.list(|input| input.parse_expr())?;
-        self.expect("]")?;
-        Ok(Expr::ListCons(es))
-    }
-
-    fn parse_result_cons(&mut self) -> Result<Expr, ParseError> {
-        match self.expect("Ok") {
-            Ok(_) => {
-                self.expect("(")?;
-                let e = self.parse_expr()?;
-                self.expect(")")?;
-                return Ok(Expr::ResultCons(ResultValue::Okay(Box::new(e))));
-            },
-            Err(_) => {},
-        }
-
-        self.expect("Err")?;
-        self.expect("(")?;
-        let e = self.parse_expr()?;
-        self.expect(")")?;
-        Ok(Expr::ResultCons(ResultValue::Error(Box::new(e))))
-    }
-
-    fn parse_struct_cons(&mut self) -> Result<Expr, ParseError> {
-        fn parse_struct_slot(input : &mut Input) -> Result<StructSlot, ParseError> {
-            let name = input.parse_symbol()?;
-            input.expect(":")?;
-            let value = input.parse_expr()?;
-            Ok(StructSlot { name, value })
-        }
-        self.expect("new")?;
-        let name = self.maybe(|input| input.parse_symbol());
-        self.expect("{")?;
-        let slots = self.list(|input| parse_struct_slot(input))?;
-        self.expect("}")?;
-        Ok(Expr::StructCons { name, slots })
-    }
-
-    fn parse_variable(&mut self) -> Result<Expr, ParseError> {
-        let namespace = self.zero_or_more(|input| {
-            let v = input.parse_symbol()?;
-            input.expect("::")?;
-            Ok(v)
-        })?;
-
-        let name = self.parse_symbol()?;
-        Ok(Expr::Variable { namespace, name })
-    }
-
-    fn parse_paren_expr(&mut self) -> Result<Expr, ParseError> {
-        self.expect("(")?;
-        let expr = self.parse_expr()?;
-        self.expect(")")?;
-        Ok(expr)
-    }
-
-    // dash call, call, dot, try
-    fn parse_post_expr(&mut self, e : Expr) -> Result<Expr, ParseError> {
-        match self.expect("-") {
-            Ok(_) => {
-                let func = self.parse_symbol()?;
-                return self.parse_post_expr(Expr::Dash { object: Box::new(e), func });
-            },
-            Err(_) => (),
-        }
-
-        match self.expect(".") {
-            Ok(_) => {
-                let slot = self.parse_symbol()?;
-                return self.parse_post_expr(Expr::Dot { object: Box::new(e), slot });
-            },
-            Err(_) => (),
-        }
-
-        match self.expect("(") {
-            Ok(_) => {
-                let params = self.list(|input| input.parse_expr())?;
-
-                self.expect(")")?; 
-            
-                return self.parse_post_expr(Expr::Call { func: Box::new(e), params });
-            },
-            Err(_) => (),
-        }
-
-        match self.expect("?") {
-            Ok(_) => return self.parse_post_expr(Expr::Try(Box::new(e))),
-            Err(_) => (),
-        }
-
-        Ok(e)
-    }
-
-    fn parse_lambda(&mut self) -> Result<Expr, ParseError> {
-        fn parse_param(input : &mut Input) -> Result<FunParam, ParseError> {
-            let name = input.parse_symbol()?; 
-            match input.expect(":") {
-                Ok(_) => { 
-                    let param_type = input.parse_type()?;
-                    Ok(FunParam { name, param_type })
+    input.expect("|")?;
+    let params = input.list(parse_param)?;
+    input.expect("|")?;
+    match input.expect("->") {
+        Ok(_) => {
+            let return_type = parse_type(input)?;
+            match input.expect("{") {
+                Ok(_) => {
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok(Expr::StatementLambda { params, return_type, definition })
                 },
                 Err(_) => {
-                    Ok(FunParam { name, param_type: Type::Infer })
+                    let definition = Box::new(parse_expr(input)?);
+                    Ok(Expr::ExprLambda { params, return_type, definition })
                 },
             }
-        }
-        self.expect("|")?;
-        let params = self.list(parse_param)?;
-        self.expect("|")?;
-        match self.expect("->") {
-            Ok(_) => {
-                let return_type = self.parse_type()?;
-                match self.expect("{") {
-                    Ok(_) => {
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok(Expr::StatementLambda { params, return_type, definition })
-                    },
-                    Err(_) => {
-                        let definition = Box::new(self.parse_expr()?);
-                        Ok(Expr::ExprLambda { params, return_type, definition })
-                    },
-                }
-            },
-            Err(_) => {
-                match self.expect("{") {
-                    Ok(_) => {
-                        let definition = self.zero_or_more(|input| input.parse_statement())?;
-                        self.expect("}")?;
-                        Ok(Expr::StatementLambda { params, return_type: Type::Infer, definition })
-                    },
-                    Err(_) => {
-                        let definition = Box::new(self.parse_expr()?);
-                        Ok(Expr::ExprLambda { params, return_type: Type::Infer, definition })
-                    },
-                }
-            },
-        }
+        },
+        Err(_) => {
+            match input.expect("{") {
+                Ok(_) => {
+                    let definition = input.zero_or_more(parse_statement)?;
+                    input.expect("}")?;
+                    Ok(Expr::StatementLambda { params, return_type: Type::Infer, definition })
+                },
+                Err(_) => {
+                    let definition = Box::new(parse_expr(input)?);
+                    Ok(Expr::ExprLambda { params, return_type: Type::Infer, definition })
+                },
+            }
+        },
     }
-
-    fn parse_bool(&mut self) -> Result<Expr, ParseError> {
-        let rp = self.create_restore();
-        let value = self.parse_symbol()?;
-        if value.value == "true" {
-            Ok(Expr::Bool(true))
-        }
-        else if value.value == "false" {
-            Ok(Expr::Bool(false))
-        }
-        else {
-            self.restore(rp);
-            Err(ParseError::ErrorAt(value.start, "Expected boolean".to_string()))
-        }
-    }
-
 }
+
+fn parse_bool(input : &mut Input) -> Result<Expr, ParseError> {
+    let rp = input.create_restore();
+    let value = input.parse_symbol()?;
+    if value.value == "true" {
+        Ok(Expr::Bool(true))
+    }
+    else if value.value == "false" {
+        Ok(Expr::Bool(false))
+    }
+    else {
+        input.restore(rp);
+        Err(ParseError::ErrorAt(value.start, "Expected boolean".to_string()))
+    }
+}
+
 
 #[cfg(test)]
 mod test {
