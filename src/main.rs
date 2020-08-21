@@ -2,6 +2,7 @@
 extern crate parse_input;
 extern crate parse_type;
 
+mod util;
 mod gen;
 mod parsing;
 
