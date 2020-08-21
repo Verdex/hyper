@@ -2,7 +2,7 @@
 use parse_input::{Input, PSym, ParseError};
 use parse_type::{Type, parse_type};
 use super::statement::parse_statement;
-use super::proc_ast::*;
+use super::ast::*;
 
 
 pub fn parse_top_level(input : &mut Input) -> Result<TopLevel, ParseError> {

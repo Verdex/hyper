@@ -2,7 +2,7 @@
 use parse_input::{Input, ParseError};
 use parse_type::{Type, parse_type};
 
-use super::proc_ast::*;
+use super::ast::*;
 
 
 pub fn parse_statement(input : &mut Input) -> Result<Statement, ParseError> {

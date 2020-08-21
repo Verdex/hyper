@@ -1,7 +1,7 @@
 
 use parse_input::{Input, ParseError};
 
-use super::proc_ast::*;
+use super::ast::*;
 use super::top_level::parse_top_level;
 
 
