@@ -5,7 +5,7 @@ use super::ast::*;
 use super::top_level::parse_top_level;
 
 
-pub fn parse_proc(s : &str) -> Result<Mod, ParseError> {
+pub fn parse(s : &str) -> Result<Mod, ParseError> {
     let ci = s.char_indices().collect::<Vec<(usize, char)>>();
     let mut input = Input::new(&ci);
 
