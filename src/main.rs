@@ -4,10 +4,10 @@ extern crate parse_type;
 extern crate error_reporter;
 extern crate code_gen;
 
-mod gen;
 mod parsing;
 
-use gen::lua_ast::*;
+use code_gen::lua_5_2::{ast};
+
 
 fn main() {
     println!("Hello, world!");
