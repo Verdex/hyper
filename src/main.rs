@@ -1,8 +1,8 @@
 
 extern crate parse_input;
 extern crate parse_type;
+extern crate error_reporter;
 
-mod util;
 mod gen;
 mod parsing;
 
