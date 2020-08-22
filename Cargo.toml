@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 parse_input = { path = "../parse_input", version = "0.1.1" }
 parse_type = { path = "../parse_type", version = "0.2.0" } 
+error_reporter = { path = "../error_reporter", version = "0.1.0" }
+
